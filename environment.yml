@@ -1,0 +1,6 @@
+name: pyrt
+
+dependencies:
+  - python=3.6
+  - numpy
+  - pillow

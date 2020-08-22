@@ -1,11 +1,11 @@
 import numpy as np
-from ray import Ray, color, hit_sphere
+from shapes import Sphere
+from ray import Ray
+from hitable import color, Hitables
 from PIL import Image
 
+WORLD = Hitables ([Sphere (np.array([0, 0,-1]), .5), Sphere(np.array([0, -100.5, -1]), 100)])
 
-
-def to_binary(n):
-	return  "{0:b}".format(n)
 
 def main ():
 	print ("Running main")
@@ -18,8 +18,8 @@ def main ():
 		print(current_run)
 	
 	
-	x = 200;
-	y = 100;
+	x = 400;
+	y = 200;
 	
 	size = [x, y]
 	
@@ -36,7 +36,7 @@ def main ():
 		vertical = np.array([0, 2, 0])
 		
 		origin = np.zeros(3)
-		
+
 		
 		for j in range (y, 0, -1):
 			for i in range (x):
@@ -46,7 +46,7 @@ def main ():
 				
 				ray = Ray (origin, llc + u * horizontal + v * vertical)
 	
-				col = color(ray)
+				col = color(ray, WORLD)
 				
 				r = str(int(255.99*col[0]))
 				g = str(int(255.99*col[1]))
