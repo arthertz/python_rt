@@ -33,3 +33,22 @@ class Sphere (Hitable):
                 return True
         else:
             return False
+
+class Plane  (Hitable):
+    def __init__ (self, p0, p1, p2):
+        self.p0 = p0
+        self.p1 = p1
+        self.p2 = p2
+    
+    def hit (self, ray, t_min, t_max, hit_record):
+
+        p01 = self.p1 - self.p0
+        p02 = self.p2 - self.p0
+
+        t = np.dot(np.cross(p01, p02), (ray.origin() - self.p0))/np.dot(-ray.direction(), np.cross(p01, p02))
+        if t > t_min and t < t_max:
+            hit_record.t = t
+            hit_record.p = ray.origin() + t * ray.direction()
+            hit_record.normal = np.array([0, 1, 0])
+            return True
+        return False

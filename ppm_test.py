@@ -1,11 +1,15 @@
 import numpy as np
-from shapes import Sphere
+from shapes import Sphere, Plane
 from ray import Ray
 from hitable import color, Hitables
 from PIL import Image
 
+X, Y, Z = np.zeros(3), np.zeros(3), np.zeros(3)
+Floor = np.zeros(3)
+X[0], Y[1], Z[2] = 1, 1, 1
+Floor[1] = -.5
 
-WORLD = Hitables ([Sphere (np.array([0, 0,-1]), .5), Sphere(np.array([0, -100.5, -1]), 100)])
+WORLD = Hitables ([Sphere (np.array([0, 0,-1]), .5), Plane(Floor, Floor + X, Floor + Z)])
 
 def main ():
 	print ("Running main")
@@ -18,8 +22,8 @@ def main ():
 		print(current_run)
 	
 	
-	x = 2560;
-	y = 1440;
+	x = 200;
+	y = 100;
 	
 	size = [x, y]
 	
