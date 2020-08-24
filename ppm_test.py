@@ -2,6 +2,7 @@ import os
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 import numpy as np
 import random
+import time
 from shapes import Sphere, Plane
 from camera import Camera
 from ray import Ray
@@ -28,11 +29,13 @@ x = 800
 
 y = 800
 
-x_chunks = 4
+x_chunks = 32
 
-y_chunks = 4
+y_chunks = 32
 
-sn = 1
+chunks_made = x_chunks * y_chunks
+
+sn = 3
 
 pixel_count = y*x
 	
@@ -141,16 +144,36 @@ if __name__ ==  '__main__':
 				print ("Making a chunk at", [j*chunk_height, i*chunk_width])
 				p = Process (target=render_chunk, args = (j*chunk_height, i*chunk_width, chunk_height, chunk_width, camera, render_job, file_name, lock))
 				procs.append(p)
+		
+
+		chunks_done = 0
+		last_report = 0
+		work_group_size = 8
+
+		if (len(procs)//work_group_size != len(procs)/work_group_size):
+			print ("ERROR! Work group does not divide chunk count")
+		k = len(procs)//work_group_size
+		for i in range (k):
+			work_group = []
+			for j in range (work_group_size):
+				p = procs[i*work_group_size + j]
+				work_group.append(p)
 				p.start()
-				p.join()
+			#Give our work group a few seconds to get stuff done
+			#Remember, each process is using a physical core
+			time.sleep(2)
+			for p in work_group:
+				#Force each group member to finish up, then report progress
+				p.join ()
+				chunks_done += 1
+				if chunks_done/chunks_made - last_report >= .05:
+					last_report = chunks_done/chunks_made
+					print ('=', end="")
 				im = Image.fromarray(render_job.out(), mode='RGB').save(file_name)
 
 	with open("raycie_md.txt", "w") as file:
 		file.write(str(int(current_run) + 1))
 
-	'''if chunks_done/chunks_made - last_report >= .05:
-		last_report = pixels_done/pixel_count
-		print ('=', end="")'''
-	print ("Main finished!")
+	print ("] Main finished!")
 else:
 	os.environ['OPENBLAS_NUM_THREADS'] = '1'

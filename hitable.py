@@ -43,7 +43,7 @@ class HitRecord:
 def color (ray, world, show_normals=False):
 	rec = HitRecord()
 	if world.hit(ray, 0.0, MAXFLOAT, rec):
-		target = rec.p + rec.t + random_in_sphere()
+		target = rec.t + random_in_sphere()
 		if (show_normals):
 			return rec.normal_color()
 		else:
