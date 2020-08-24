@@ -25,17 +25,16 @@ vertical = np.array([0, 2, 0])
 	
 origin = np.zeros(3)
 
-x = 800
+x = 2560
 
-y = 800
+y = 1440
 
-x_chunks = 32
-
-y_chunks = 32
+x_chunks = 12
+y_chunks = 12
 
 chunks_made = x_chunks * y_chunks
 
-sn = 3
+sn = 20
 
 pixel_count = y*x
 	
@@ -43,28 +42,35 @@ pixels_done = 0
 
 last_report = 0
 
-WORLD = Hitables ([Sphere (np.array([0, 0,-1]), .5), Plane(Floor, Floor + X, Floor + Z)])
+WORLD = Hitables ([Sphere (np.array([0, 0,-1]), .5), Sphere(np.array([0, -100.5,-1]), 100)])
 
 class Render:
 	def __init__ (self, im_array) :
+		self.chunks_done = 0
+		self.chunks_made = 0
 		self.y = len(im_array)
 		self.x = len(im_array[0])
 		self.r_array = Array ('i', self.x * self.y)
 		self.g_array = Array ('i', self.x * self.y)
 		self.b_array = Array ('i', self.x * self.y)
 	
-	def fill_rgb (self, i, j, r, g, b):
-		self.r_array[self.y * j + i] = r
-		self.g_array[self.y * j + i] = g
-		self.b_array[self.y * j + i] = b
+	def get_chunks_done (self):
+		return self.chunks_done
+	def inc_chunk (self):
+		self.chunks_done += 1
+		print(self.get_chunks_done())
+
+	def fill_rgb (self, x, y, r, g, b):
+		self.r_array[self.y * y + x] = r
+		self.g_array[self.y * y + x] = g
+		self.b_array[self.y * y + x] = b
 
 	def out (self):
 		im_array = np.zeros(shape=(self.y, self.x, 3), dtype=np.uint8)
-		for j in range(self.y):
-			for i in range(self.x):
-				im_array[self.y - i - 1][j][0] = self.r_array[self.y * j + i]
-				im_array[self.y - i - 1][j][1] = self.g_array[self.y * j + i]
-				im_array[self.y - i - 1][j][2] = self.b_array[self.y * j + i]
+		for i in range(len(self.r_array)):
+			im_array[y - 1 - i % self.y][i // self.y][0] = self.r_array[i]
+			im_array[y - 1 - i % self.y][i //self.y][1] = self.g_array[i]
+			im_array[y - 1 - i % self.y][i // self.y][2] = self.b_array[i]
 		return im_array
 
 class RenderMan (BaseManager):
@@ -82,7 +88,7 @@ def render_chunk (start_j, start_i, height, width, camera, render_job, file_name
 			col = np.zeros(3)
 			
 			for _ in range (sn):
-				ray = camera.get_ray (u + random.random()/x, v + random.random()/y)
+				ray = camera.get_ray (u + (random.random()-.5)/x, v + (random.random()-.5)/y)
 				col += color(ray, WORLD)
 			
 			col /= sn
@@ -90,6 +96,7 @@ def render_chunk (start_j, start_i, height, width, camera, render_job, file_name
 			g = int(255.99*col[1]) #green
 			b = int(255.99*col[2]) #blue
 			render_job.fill_rgb(start_j + j, start_i + i, r, g, b)
+	render_job.inc_chunk()
 
 
 def render_pixel (j, i, camera, im_array, file_name, lock):
@@ -125,9 +132,6 @@ if __name__ ==  '__main__':
 	camera = Camera(llc, horizontal, vertical, origin)
 
 	procs = []
-
-	print ("Rendering Progress:")
-	print("[", end="")
 	
 	lock = Lock ()
 
@@ -146,9 +150,10 @@ if __name__ ==  '__main__':
 				procs.append(p)
 		
 
-		chunks_done = 0
 		last_report = 0
-		work_group_size = 8
+		work_group_size = 24
+		print ("Rendering Progress:")
+		print("[", end="")
 
 		if (len(procs)//work_group_size != len(procs)/work_group_size):
 			print ("ERROR! Work group does not divide chunk count")
@@ -159,17 +164,13 @@ if __name__ ==  '__main__':
 				p = procs[i*work_group_size + j]
 				work_group.append(p)
 				p.start()
+				time.sleep(1)
 			#Give our work group a few seconds to get stuff done
 			#Remember, each process is using a physical core
-			time.sleep(2)
 			for p in work_group:
+				p.join()
 				#Force each group member to finish up, then report progress
-				p.join ()
-				chunks_done += 1
-				if chunks_done/chunks_made - last_report >= .05:
-					last_report = chunks_done/chunks_made
-					print ('=', end="")
-				im = Image.fromarray(render_job.out(), mode='RGB').save(file_name)
+			im = Image.fromarray(render_job.out(), mode='RGB').save(file_name)
 
 	with open("raycie_md.txt", "w") as file:
 		file.write(str(int(current_run) + 1))

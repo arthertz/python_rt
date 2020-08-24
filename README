@@ -1,1 +1,3 @@
 A summer experiment in raytracing with python. Following the book Raytracing In One Weekend.
+Starting out, my idea was to translate the ideas present in the book into decently performant python.
+Since then this project  has already outgrown some of the book's material, implementing a very simple multicore renderer.
