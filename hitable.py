@@ -1,4 +1,6 @@
 import numpy as np
+import random
+from ray import Ray
 
 MAXFLOAT = 999
 
@@ -38,13 +40,21 @@ class HitRecord:
 	def normal_color (self):
 		return .5*np.array([self.normal[0]+1, self.normal[1]+1, self.normal[2]+1])
 
-
-def color (ray, world):
+def color (ray, world, show_normals=False):
 	rec = HitRecord()
 	if world.hit(ray, 0.0, MAXFLOAT, rec):
-		return rec.normal_color()
-	
-	unit_direction = ray.direction()/np.linalg.norm(ray.direction())
-	t = .5 * (unit_direction[1] + 1.0)
-	return (1.0-t)*np.ones(3) + t*np.array([.5, .7, 1.0])
-	
+		target = rec.p + rec.t + random_in_sphere()
+		if (show_normals):
+			return rec.normal_color()
+		else:
+			return .5 * color(Ray(rec.p, target - rec.p), world)
+	else:
+		unit_direction = ray.direction()/np.linalg.norm(ray.direction())
+		t = .5 * (unit_direction[1] + 1.0)
+		return (1.0-t)*np.ones(3) + t*np.array([.5, .7, 1.0])
+
+def random_in_sphere ():
+	x, y, z = random.random(), random.random(), random.random()
+	while x**2 + y**2 + z**2 >= 1:
+		x, y, z = random.random(), random.random(), random.random()
+	return np.array([x, y, z])
